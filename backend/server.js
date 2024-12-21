@@ -2,7 +2,11 @@ const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const path = require('path');
+<<<<<<< HEAD
 require('dotenv').config();  // 載入 .env 檔案中的變數
+=======
+require('dotenv').config(); // 用來讀取 .env 檔案
+>>>>>>> 9121d05428011669012948a22a4fa0fb3526db24
 
 const app = express();
 const PORT = 3000;
@@ -16,7 +20,11 @@ app.use(express.json());
 // 註冊端點
 app.post('/register', async (req, res) => {
     const { username, password } = req.body;
+<<<<<<< HEAD
 
+=======
+    
+>>>>>>> 9121d05428011669012948a22a4fa0fb3526db24
     // 檢查用戶是否已經存在
     const userExists = users.find(user => user.username === username);
     if (userExists) {
@@ -30,10 +38,14 @@ app.post('/register', async (req, res) => {
     const newUser = { username, password: hashedPassword };
     users.push(newUser);
 
+<<<<<<< HEAD
     // 生成 JWT 令牌，並在註冊成功後返回令牌
     const token = jwt.sign({ username: newUser.username }, process.env.JWT_SECRET, { expiresIn: '1h' });
 
     res.status(201).json({ message: 'User registered successfully', token });
+=======
+    res.status(201).json({ message: 'User registered successfully' });
+>>>>>>> 9121d05428011669012948a22a4fa0fb3526db24
 });
 
 // 登入端點
@@ -58,9 +70,12 @@ app.post('/login', async (req, res) => {
     res.json({ token });
 });
 
+<<<<<<< HEAD
 // 設定 Express 來服務靜態檔案
 app.use(express.static(path.join(__dirname, '../frontend')));  // 靜態文件路徑
 
+=======
+>>>>>>> 9121d05428011669012948a22a4fa0fb3526db24
 // 設置首頁路由
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, '../frontend', 'index.html'));
