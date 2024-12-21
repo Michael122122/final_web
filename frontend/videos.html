@@ -8,65 +8,82 @@
     <style>
         body {
             font-family: 'Poppins', sans-serif;
-            background: linear-gradient(180deg, #013369, #ce1141);
+            background: linear-gradient(135deg, #ff6f61, #d63b3b);
             color: #fff;
             margin: 0;
             padding: 0;
             display: flex;
             flex-direction: column;
             align-items: center;
+            min-height: 100vh;
         }
         header {
-            background: linear-gradient(90deg, #013369, #ce1141);
+            background: linear-gradient(90deg, #ff6f61, #d63b3b);
             color: #fff;
             text-align: center;
             padding: 2em 1em;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
             width: 100%;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            position: sticky;
+            top: 0;
+            z-index: 100;
         }
         header h1 {
             margin: 0;
-            font-size: 3rem;
+            font-size: 3.5rem;
+            font-weight: 600;
+            letter-spacing: 2px;
         }
-        header p {
-            margin: 0.5em 0 0;
+        header .user-greeting {
+            margin-top: 10px;
             font-size: 1.2rem;
+            font-weight: 300;
         }
         .video-list {
             display: flex;
             flex-direction: column;
             align-items: center;
-            margin-top: 20px;
+            margin-top: 30px;
             width: 80%;
             max-width: 1000px;
+            animation: fadeIn 1s ease-in-out;
         }
         .video-item {
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 15px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
             padding: 20px;
-            margin-bottom: 15px;
+            margin-bottom: 20px;
             width: 100%;
+            max-width: 800px;
             text-align: center;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .video-item:hover {
+            transform: scale(1.05);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
         }
         .video-item h3 {
-            font-size: 1.5rem;
-            margin-bottom: 10px;
+            font-size: 1.8rem;
+            margin-bottom: 12px;
+            font-weight: 600;
         }
         .video-item p {
-            font-size: 1rem;
+            font-size: 1.1rem;
             color: #ccc;
+            margin-bottom: 15px;
         }
         .btn {
             background: #ff5722;
             color: #fff;
-            padding: 10px 20px;
+            padding: 12px 24px;
             border: none;
-            border-radius: 25px;
-            font-size: 1rem;
+            border-radius: 30px;
+            font-size: 1.1rem;
             font-weight: 600;
             cursor: pointer;
             margin-top: 10px;
+            transition: background-color 0.3s ease;
         }
         .btn:hover {
             background: #ff784e;
@@ -78,15 +95,31 @@
         .delete-btn:hover {
             background: #e57373;
         }
+        footer {
+            position: absolute;
+            bottom: 20px;
+            font-size: 0.9rem;
+            text-align: center;
+            color: #fff;
+        }
+
+        /* Animation for fading in */
+        @keyframes fadeIn {
+            0% { opacity: 0; }
+            100% { opacity: 1; }
+        }
     </style>
 </head>
 <body>
     <header>
-        <h1>儲存的影片</h1>
+        <h1>球員精華</h1>
+        <div id="userGreeting" class="user-greeting">
+            <!-- 登入後顯示用戶名稱 -->
+        </div>
     </header>
 
     <div class="video-list" id="videoList">
-       
+        <!-- 儲存的影片列表會顯示在這裡 -->
     </div>
 
     <footer>
@@ -94,7 +127,16 @@
     </footer>
 
     <script>
-      
+        // 取得用戶名稱或 token
+        const username = localStorage.getItem('username');
+        const token = localStorage.getItem('token');
+
+        // 檢查用戶是否已登入
+        if (!token) {
+            // 如果未登入，跳轉至登入頁面
+            window.location.href = 'login.html';
+        }
+
         const savedVideosKey = "savedVideos";
         let savedVideos = JSON.parse(localStorage.getItem(savedVideosKey)) || [];
 
@@ -106,13 +148,13 @@
                 videoListContainer.innerHTML = "<p>目前沒有儲存的影片。</p>";
             } else {
                 savedVideos.forEach((video, index) => {
-                
                     if (!document.querySelector(`[data-link='${video.link}']`)) {
                         const videoItem = document.createElement("div");
                         videoItem.classList.add("video-item");
                         videoItem.setAttribute("data-link", video.link);
 
                         videoItem.innerHTML = `
+                            <h3>影片 ${index + 1}</h3>
                             <a href="${video.link}" target="_blank" class="btn">觀看影片</a>
                             <p>${video.description}</p>
                             <button class="btn delete-btn" onclick="deleteVideo(${index})">刪除</button>
@@ -124,13 +166,9 @@
             }
         }
 
-        
         function deleteVideo(index) {
-            
             savedVideos.splice(index, 1);
-           
             localStorage.setItem(savedVideosKey, JSON.stringify(savedVideos));
-           
             renderVideos();
         }
 

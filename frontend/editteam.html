@@ -25,6 +25,35 @@
             background: #ff784e;
         }
 
+        .search-container {
+            margin-bottom: 20px;
+        }
+
+        .search-container input {
+            padding: 10px;
+            font-size: 1.2rem;
+            width: 200px;
+            border-radius: 5px;
+            border: 2px solid #ff5722;
+            background: rgba(255, 255, 255, 0.2);
+            color: #fff;
+        }
+
+        .search-container button {
+            background-color: #ff5722;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            cursor: pointer;
+            font-size: 1.2rem;
+            border-radius: 5px;
+            margin-left: 10px;
+        }
+
+        .search-container button:hover {
+            background-color: #ff784e;
+        }
+
         .player-list {
             display: flex;
             flex-wrap: wrap;
@@ -70,6 +99,26 @@
             left: 50%;
             transform: translateX(-50%);
             font-size: 1.2rem;
+            cursor: pointer;
+        }
+
+        .pagination {
+            margin-top: 20px;
+        }
+
+        .pagination button {
+            background-color: #ff5722;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            cursor: pointer;
+            font-size: 1.2rem;
+            border-radius: 5px;
+            margin: 0 5px;
+        }
+
+        .pagination button:hover {
+            background-color: #ff784e;
         }
     </style>
 </head>
@@ -77,47 +126,114 @@
     <h1>編輯我的夢幻球隊</h1>
     <a href="index.html"><button class="btn">返回主頁</button></a>
 
+    <div class="search-container">
+        <input type="text" id="searchBox" placeholder="搜尋球員..." oninput="searchPlayers()">
+        <button onclick="searchPlayers()">搜尋</button>
+    </div>
+
     <div class="player-list" id="playerList"></div>
 
     <div>
         <div class="team-slot" id="slot1" ondrop="drop(event)" ondragover="allowDrop(event)">
-            <div class="player-in-slot" id="slot1-player"></div>
+            <div class="player-in-slot" id="slot1-player" onclick="removePlayer('slot1')"></div>
         </div>
         <div class="team-slot" id="slot2" ondrop="drop(event)" ondragover="allowDrop(event)">
-            <div class="player-in-slot" id="slot2-player"></div>
+            <div class="player-in-slot" id="slot2-player" onclick="removePlayer('slot2')"></div>
         </div>
         <div class="team-slot" id="slot3" ondrop="drop(event)" ondragover="allowDrop(event)">
-            <div class="player-in-slot" id="slot3-player"></div>
+            <div class="player-in-slot" id="slot3-player" onclick="removePlayer('slot3')"></div>
         </div>
         <div class="team-slot" id="slot4" ondrop="drop(event)" ondragover="allowDrop(event)">
-            <div class="player-in-slot" id="slot4-player"></div>
+            <div class="player-in-slot" id="slot4-player" onclick="removePlayer('slot4')"></div>
         </div>
         <div class="team-slot" id="slot5" ondrop="drop(event)" ondragover="allowDrop(event)">
-            <div class="player-in-slot" id="slot5-player"></div>
+            <div class="player-in-slot" id="slot5-player" onclick="removePlayer('slot5')"></div>
         </div>
     </div>
 
+    <div class="pagination" id="pagination"></div>
+
     <script>
-        // 取得現役球員的資料並包含金鑰
+        const API_KEY = "0642ed96-ece5-4ba6-9706-98bb00a5684c";  // 請替換為您的API金鑰
+        let allPlayers = {};  // 存儲所有球員
+        let selectedPlayers = JSON.parse(localStorage.getItem("selectedPlayers")) || {}; // 從localStorage載入已選球員
+        const playersPerPage = 25;
+        let currentPage = 1;
+        let nextCursor = null;
+
+        // 取得所有現役球員資料
         async function fetchPlayers(page = 1) {
-            const response = await fetch(`https://cors-anywhere.herokuapp.com/https://www.balldontlie.io/api/v1/players?page=${page}`, {
+            let url = `https://api.balldontlie.io/v1/players?page=${page}`;
+            if (nextCursor) {
+                url = `https://api.balldontlie.io/v1/players?page=${page}&cursor=${nextCursor}`;
+            }
+
+            const response = await fetch(url, {
                 headers: {
-                    "Authorization": "0642ed96-ece5-4ba6-9706-98bb00a5684c" // API金鑰
+                    "Authorization": API_KEY
                 }
             });
             const data = await response.json();
+            nextCursor = data.meta.next_cursor;  // 記錄下一頁的游標
             return data.data;
         }
-        
 
-        // 載入球員資料並顯示在畫面上
+        // 顯示球員
         async function loadPlayers() {
             const playerListContainer = document.getElementById("playerList");
+            playerListContainer.innerHTML = ""; // 清空當前球員列表
 
-            for (let page = 1; page <= 35; page++) {
+            // 載入多頁資料，防止重複
+            for (let page = 1; page <= 3; page++) {  // 載入三頁資料
                 const players = await fetchPlayers(page);
-                const activePlayers = players.filter(player => player.team !== null);
-                activePlayers.forEach(player => {
+                players.forEach(player => {
+                    if (!allPlayers[player.id]) {  // 防止重複
+                        allPlayers[player.id] = player;
+                    }
+                });
+            }
+
+            // 顯示搜尋結果（如果有）
+            searchPlayers();
+            loadSelectedPlayers(); // 加載已選的球員
+        }
+
+        // 載入已選球員
+        function loadSelectedPlayers() {
+            Object.keys(selectedPlayers).forEach(slotId => {
+                const playerId = selectedPlayers[slotId];
+                const player = allPlayers[playerId];
+                const slotElement = document.getElementById(slotId);
+                const playerInSlot = slotElement.querySelector(".player-in-slot");
+                playerInSlot.textContent = `${player.first_name} ${player.last_name}`;
+            });
+        }
+
+        // 搜尋球員
+        function searchPlayers() {
+            const searchTerm = document.getElementById("searchBox").value.toLowerCase();
+
+            if (searchTerm === "") {
+                // 搜尋框為空時，不顯示球員
+                document.getElementById("playerList").innerHTML = "";
+            } else {
+                // 搜尋符合條件的球員
+                const filteredPlayers = Object.values(allPlayers).filter(player => 
+                    player.first_name.toLowerCase().includes(searchTerm) || 
+                    player.last_name.toLowerCase().includes(searchTerm)
+                );
+                displayFilteredPlayers(filteredPlayers);
+            }
+        }
+
+        // 顯示搜尋過濾後的球員
+        function displayFilteredPlayers(players) {
+            const playerListContainer = document.getElementById("playerList");
+            playerListContainer.innerHTML = "";  // 清空目前顯示的球員列表
+
+            players.forEach(player => {
+                // 只顯示未選擇的球員
+                if (!Object.values(selectedPlayers).includes(player.id)) {
                     const playerElement = document.createElement("div");
                     playerElement.classList.add("player");
                     playerElement.setAttribute("draggable", "true");
@@ -125,8 +241,8 @@
                     playerElement.textContent = `${player.first_name} ${player.last_name}`;
                     playerElement.addEventListener("dragstart", drag);
                     playerListContainer.appendChild(playerElement);
-                });
-            }
+                }
+            });
         }
 
         // 開始拖曳
@@ -134,34 +250,53 @@
             event.dataTransfer.setData("text", event.target.id);
         }
 
-        // 允許拖曳放置
+        // 允許放置
         function allowDrop(event) {
             event.preventDefault();
         }
 
-        // 放置球員到選擇格子
+        // 放置球員
         function drop(event) {
             event.preventDefault();
             const data = event.dataTransfer.getData("text");
             const playerElement = document.getElementById(data);
             const slotElement = event.target;
-        
-            // 確保拖放的目標是 team-slot 且該區域是空的
+
             if (slotElement.classList.contains("team-slot") && !slotElement.querySelector(".player-in-slot").textContent) {
                 const playerInSlot = slotElement.querySelector(".player-in-slot");
-        
-                // 確保 playerInSlot 存在
-                if (playerInSlot) {
-                    playerInSlot.textContent = playerElement.textContent;
-                    playerElement.style.display = 'none';
-                }
-            } else {
-                console.error("Invalid drop target or slot already filled");
+                playerInSlot.textContent = playerElement.textContent;
+                const playerId = playerElement.id.split('-')[1];
+                selectedPlayers[slotElement.id] = playerId; // 儲存到localStorage
+                localStorage.setItem("selectedPlayers", JSON.stringify(selectedPlayers));
+                playerElement.style.display = 'none'; // 隱藏已選擇的球員
             }
         }
-        
 
-        // 頁面加載時呼叫載入球員的函數
+        // 移除球員
+        function removePlayer(slotId) {
+            const slot = document.getElementById(slotId);
+            const playerInSlot = slot.querySelector(".player-in-slot");
+
+            if (playerInSlot) {
+                const playerName = playerInSlot.textContent;
+                // 讓移除的球員回到搜尋列表
+                const playerId = playerName.split(' ').join('-').toLowerCase();
+                const playerElement = document.createElement("div");
+                playerElement.classList.add("player");
+                playerElement.setAttribute("draggable", "true");
+                playerElement.setAttribute("id", `player-${playerId}`);
+                playerElement.textContent = playerName;
+                playerElement.addEventListener("dragstart", drag);
+                document.getElementById("playerList").appendChild(playerElement);
+
+                // 重設插槽和已選球員狀態
+                playerInSlot.textContent = '';
+                delete selectedPlayers[slotId];
+                localStorage.setItem("selectedPlayers", JSON.stringify(selectedPlayers));
+            }
+        }
+
+        // 頁面加載時載入所有球員
         loadPlayers();
     </script>
 </body>
